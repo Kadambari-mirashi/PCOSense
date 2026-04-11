@@ -1,0 +1,22 @@
+{
+  "feature_names": [
+    "  I   beta-HCG(mIU/mL)",
+    "II    beta-HCG(mIU/mL)",
+    "AMH(ng/mL)"
+  ],
+  "n_features": 3,
+  "n_train": 432,
+  "n_test": 109,
+  "pcos_rate_train": 0.3263888888888889,
+  "pcos_rate_test": 0.3302752293577982,
+  "scaler_mean": [
+    589.4528842592592,
+    224.40458198302548,
+    5.730655092592593
+  ],
+  "scaler_std": [
+    3024.0711668450776,
+    1605.7795505406423,
+    5.98456417694583
+  ]
+}

@@ -1,0 +1,58 @@
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── Data — keep directory structure, ignore actual data files ────────────────
+data/raw/*.csv
+data/raw/*.zip
+data/raw/*.xlsx
+data/processed/*.pkl
+data/processed/*.npy
+
+# ── Keep metadata JSONs (small, useful to track) ─────────────────────────────
+!data/processed/eda_meta.json
+!data/processed/feature_meta.json
+
+# ── Models — track metadata but not binary model weights if large ─────────────
+# models/pcos_model.json is small (~50 KB) so we track it
+# Uncomment below if it grows beyond 50 MB:
+# models/*.json
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+.env
+.env.*
+*.secret
+kaggle.json
+supabase_key.txt
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/settings.json
