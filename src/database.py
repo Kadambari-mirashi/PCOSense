@@ -1,0 +1,252 @@
+"""
+database.py — Supabase PostgreSQL client for PCOSense
+======================================================
+Provides:
+  - SupabaseClient : store patients, predictions, and audit-log entries
+
+Required Supabase tables (run this SQL in the Supabase SQL editor):
+---------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS patients (
+    id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at    TIMESTAMPTZ DEFAULT now(),
+    age           REAL,
+    bmi           REAL,
+    blood_group   TEXT,
+    cycle_regular BOOLEAN,
+    symptoms      JSONB DEFAULT '{}',
+    hormones      JSONB DEFAULT '{}',
+    raw_input     JSONB DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS predictions (
+    id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id      UUID REFERENCES patients(id),
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    risk_score      REAL NOT NULL,
+    risk_label      TEXT NOT NULL,
+    confidence      REAL,
+    top_factors     JSONB DEFAULT '[]',
+    clinical_summary TEXT,
+    recommendation  TEXT,
+    model_version   TEXT DEFAULT 'xgboost-v1',
+    agent_outputs   JSONB DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    patient_id  UUID REFERENCES patients(id),
+    event       TEXT NOT NULL,
+    details     JSONB DEFAULT '{}'
+);
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+from datetime import datetime, timezone
+from typing import Any
+from uuid import uuid4
+
+from dotenv import load_dotenv
+
+load_dotenv()
+log = logging.getLogger(__name__)
+
+
+class SupabaseClient:
+    """
+    Wrapper for Supabase PostgreSQL operations.
+
+    Set ``SUPABASE_URL`` and ``SUPABASE_KEY`` in your ``.env`` file.
+    """
+
+    def __init__(
+        self,
+        url: str | None = None,
+        key: str | None = None,
+    ) -> None:
+        self.url = url or os.getenv("SUPABASE_URL", "")
+        self.key = key or os.getenv("SUPABASE_KEY", "")
+        self._client: Any = None
+
+    # ── lazy connection ─────────────────────────────────────────────────────
+
+    @property
+    def client(self) -> Any:
+        """Return (and lazily create) the Supabase client."""
+        if self._client is None:
+            if not self.url or not self.key:
+                raise ValueError(
+                    "Supabase credentials missing.\n"
+                    "Set SUPABASE_URL and SUPABASE_KEY in your .env file.\n"
+                    "Get them from: https://supabase.com → Project → Settings → API"
+                )
+            from supabase import create_client
+
+            self._client = create_client(self.url, self.key)
+            log.info("Connected to Supabase at %s", self.url)
+        return self._client
+
+    def is_configured(self) -> bool:
+        """Return *True* if credentials are present (does not test connectivity)."""
+        return bool(self.url and self.key)
+
+    # ── patients ────────────────────────────────────────────────────────────
+
+    def store_patient(self, data: dict[str, Any]) -> str:
+        """
+        Insert a patient record and return the generated UUID.
+
+        *data* should contain keys like ``age``, ``bmi``, ``blood_group``,
+        ``cycle_regular``, ``symptoms``, ``hormones``, plus the full
+        ``raw_input`` dict.
+        """
+        patient_id = str(uuid4())
+
+        symptoms = {
+            k: data.get(k)
+            for k in [
+                "Weight gain(Y/N)",
+                "hair growth(Y/N)",
+                "Skin darkening (Y/N)",
+                "Hair loss(Y/N)",
+                "Pimples(Y/N)",
+                "Fast food (Y/N)",
+                "Reg.Exercise(Y/N)",
+            ]
+            if data.get(k) is not None
+        }
+
+        hormones = {
+            k: data.get(k)
+            for k in [
+                "LH(mIU/mL)",
+                "FSH(mIU/mL)",
+                "TSH (mIU/L)",
+                "PRL(ng/mL)",
+                "Vit D3 (ng/mL)",
+                "PRG(ng/mL)",
+                "AMH(ng/mL)",
+            ]
+            if data.get(k) is not None
+        }
+
+        row = {
+            "id": patient_id,
+            "age": data.get(" Age (yrs)") or data.get("age"),
+            "bmi": data.get("BMI") or data.get("bmi"),
+            "blood_group": str(data.get("Blood Group", "")),
+            "cycle_regular": data.get("Cycle(R/I)") == 1 if data.get("Cycle(R/I)") is not None else None,
+            "symptoms": symptoms,
+            "hormones": hormones,
+            "raw_input": data,
+        }
+
+        self.client.table("patients").insert(row).execute()
+        self.audit_log(patient_id, "patient_created")
+        log.info("Stored patient %s", patient_id)
+        return patient_id
+
+    # ── predictions ─────────────────────────────────────────────────────────
+
+    def store_prediction(
+        self,
+        patient_id: str,
+        risk_score: float,
+        risk_label: str,
+        confidence: float | None = None,
+        top_factors: list[dict] | None = None,
+        clinical_summary: str = "",
+        recommendation: str = "",
+        agent_outputs: dict | None = None,
+    ) -> str:
+        """Insert a prediction record linked to a patient; return the prediction UUID."""
+        prediction_id = str(uuid4())
+
+        row = {
+            "id": prediction_id,
+            "patient_id": patient_id,
+            "risk_score": risk_score,
+            "risk_label": risk_label,
+            "confidence": confidence,
+            "top_factors": top_factors or [],
+            "clinical_summary": clinical_summary,
+            "recommendation": recommendation,
+            "model_version": "xgboost-v1",
+            "agent_outputs": agent_outputs or {},
+        }
+
+        self.client.table("predictions").insert(row).execute()
+        self.audit_log(patient_id, "prediction_created", {"prediction_id": prediction_id})
+        log.info("Stored prediction %s for patient %s", prediction_id, patient_id)
+        return prediction_id
+
+    # ── audit log ───────────────────────────────────────────────────────────
+
+    def audit_log(
+        self,
+        patient_id: str,
+        event: str,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        """Append an entry to the audit trail."""
+        row = {
+            "id": str(uuid4()),
+            "patient_id": patient_id,
+            "event": event,
+            "details": details or {},
+        }
+        try:
+            self.client.table("audit_log").insert(row).execute()
+        except Exception as exc:
+            log.warning("Audit-log write failed: %s", exc)
+
+    # ── queries (convenience) ───────────────────────────────────────────────
+
+    def get_patient(self, patient_id: str) -> dict[str, Any] | None:
+        """Fetch a single patient by ID."""
+        resp = self.client.table("patients").select("*").eq("id", patient_id).execute()
+        rows = resp.data
+        return rows[0] if rows else None
+
+    def get_predictions(self, patient_id: str) -> list[dict[str, Any]]:
+        """Fetch all predictions for a patient."""
+        resp = (
+            self.client.table("predictions")
+            .select("*")
+            .eq("patient_id", patient_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return resp.data
+
+    def get_audit_trail(self, patient_id: str) -> list[dict[str, Any]]:
+        """Fetch the audit trail for a patient."""
+        resp = (
+            self.client.table("audit_log")
+            .select("*")
+            .eq("patient_id", patient_id)
+            .order("created_at")
+            .execute()
+        )
+        return resp.data
+
+
+# ---------------------------------------------------------------------------
+# CLI quick test
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    db = SupabaseClient()
+    if not db.is_configured():
+        print(
+            "Supabase not configured.\n"
+            "  1. Copy .env.example → .env\n"
+            "  2. Fill in SUPABASE_URL and SUPABASE_KEY\n"
+            "  3. Run the CREATE TABLE SQL in Supabase SQL Editor"
+        )
+    else:
+        print(f"Supabase configured: {db.url}")
+        print("Run a full integration test through the orchestrator.")
