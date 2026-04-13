@@ -1239,6 +1239,8 @@ def server(input: Any, output: Any, session: Any) -> None:
 
     @reactive.poll(lambda: int(time.time() // 12), interval_secs=3)
     def api_health_ok() -> bool:
+        if os.getenv("RENDER"):
+            return True
         try:
             with httpx.Client(timeout=4.0) as client:
                 client.get(HEALTH_URL).raise_for_status()
