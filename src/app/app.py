@@ -22,7 +22,8 @@ from shiny.reactive import extended_task
 _ROOT = Path(__file__).resolve().parent.parent.parent
 load_dotenv(_ROOT / ".env")
 
-API_BASE = os.getenv("PCOSENSE_API_URL", "http://127.0.0.1:8000").rstrip("/")
+_default_port = os.getenv("PORT", "8000")
+API_BASE = os.getenv("PCOSENSE_API_URL", f"http://127.0.0.1:{_default_port}").rstrip("/")
 ASSESS_URL = f"{API_BASE}/api/v1/assess"
 HEALTH_URL = f"{API_BASE}/api/v1/health"
 

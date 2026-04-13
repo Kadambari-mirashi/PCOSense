@@ -52,12 +52,7 @@ def _cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "").strip()
     if raw:
         return [o.strip() for o in raw.split(",") if o.strip()]
-    return [
-        "http://127.0.0.1:3838",
-        "http://localhost:3838",
-        "http://127.0.0.1:7860",
-        "http://localhost:7860",
-    ]
+    return ["*"]
 
 
 app = FastAPI(
@@ -117,3 +112,9 @@ def feature_info() -> dict:
         return PCOSPredictor.get_instance().feature_info()
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+# ── Mount Shiny frontend so everything runs as a single service ──────────
+from src.app.app import app as shiny_app  # noqa: E402
+
+app.mount("/", shiny_app)
