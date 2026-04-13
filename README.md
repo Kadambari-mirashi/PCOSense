@@ -64,7 +64,7 @@ flowchart LR
         DB["Supabase\nPostgreSQL"]:::db
     end
 
-    UI["Shiny UI\nPhase 3 🔜"]:::ui
+    UI["Shiny UI\nPhase 3 ✅"]:::ui
 
     DATA --> EDA --> FEAT --> MODEL --> WRAP
     WRAP --> A1
@@ -162,7 +162,12 @@ PCOSense/
 │   ├── rag_system.py                 ✅ Chroma retrieval + Ollama synthesis
 │   ├── agents.py                     ✅ 3 agents + orchestrator
 │   ├── data_fetcher.py               ✅ PubMed API + NHANES baselines
-│   └── database.py                   ✅ Supabase client (patients, predictions, audit)
+│   ├── database.py                   ✅ Supabase client (patients, predictions, audit)
+│   ├── api/                          ✅ FastAPI (Phase 3)
+│   │   ├── main.py                   ✅ /api/v1/assess, health, feature-info
+│   │   └── schemas.py                ✅ Form JSON → model feature keys
+│   └── app/                          ✅ Shiny UI (Phase 3)
+│       └── app.py                    ✅ Teal-themed form + results
 ├── models/
 │   ├── pcos_model.json               ✅ Trained XGBoost model
 │   └── model_metadata.json           ✅ AUROC, features, SHAP rankings
@@ -293,13 +298,37 @@ python src/data_fetcher.py
 python src/agents.py
 ```
 
+### 8 — Run the API (FastAPI)
+
+From the project root (with your virtual environment activated):
+
+```bash
+uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+- Health: [http://127.0.0.1:8000/api/v1/health](http://127.0.0.1:8000/api/v1/health)
+- OpenAPI docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- Assess (example): `POST /api/v1/assess` with JSON body using keys such as `age`, `bmi`, `cycle_ri` (1=regular, 2=irregular), `lh`, `fsh`, `tsh`, `hair_growth`, `skin_darkening`, `pimples`, `weight_gain`, `follicle_l`, `follicle_r`, `cycle_length_days`. You can also send native model column names (e.g. `" Age (yrs)"`) as extra keys.
+
+If `SUPABASE_URL` and `SUPABASE_KEY` are set in `.env`, completed assessments are written to Supabase automatically (same behaviour as `PCOSOrchestrator(db=SupabaseClient())`).
+
+### 9 — Run the Shiny frontend
+
+In a **second** terminal (API must be running unless you change `PCOSENSE_API_URL`):
+
+```bash
+shiny run src/app/app.py --reload --host 127.0.0.1 --port 3838
+```
+
+Then open [http://127.0.0.1:3838](http://127.0.0.1:3838). Set `PCOSENSE_API_URL` in `.env` if the API is not on port 8000.
+
 ---
 
 ## Development Phases
 
 - [x] **Phase 1** — XGBoost ML model (AUROC 0.9528) + SHAP explainability
 - [x] **Phase 2** — Multi-agent system + RAG (ChromaDB) + Ollama + PubMed/NHANES + Supabase
-- [ ] **Phase 3** — Python Shiny frontend + FastAPI backend + full deployment
+- [x] **Phase 3** — Python Shiny frontend + FastAPI backend + local deployment (API + UI)
 
 ---
 

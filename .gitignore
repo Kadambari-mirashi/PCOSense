@@ -42,6 +42,7 @@ data/processed/*.npy
 # ── Secrets ───────────────────────────────────────────────────────────────────
 .env
 .env.*
+!.env.example
 *.secret
 kaggle.json
 supabase_key.txt

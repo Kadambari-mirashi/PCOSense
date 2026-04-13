@@ -183,6 +183,17 @@ class DataValidatorAgent:
         }
 
 
+def _ensure_str_list(val: Any) -> list[str]:
+    """Normalise an LLM field that should be a list of strings."""
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return [str(x) for x in val if x is not None and str(x).strip()]
+    if isinstance(val, str) and val.strip():
+        return [val]
+    return []
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Agent 2 — Clinical Evidence Retriever
 # ═══════════════════════════════════════════════════════════════════════════
@@ -207,8 +218,10 @@ class ClinicalEvidenceRetriever:
         "3. Key diagnostic indicators from the literature\n"
         "4. Any red flags requiring attention\n\n"
         "Respond ONLY with valid JSON:\n"
-        '{"clinical_summary": "...", "diagnostic_criteria_met": [...], '
-        '"key_findings": [...], "red_flags": [...]}'
+        '{"clinical_summary": "paragraph summarising the clinical picture", '
+        '"diagnostic_criteria_met": ["criterion 1 description", "criterion 2 description"], '
+        '"key_findings": ["finding 1", "finding 2"], '
+        '"red_flags": ["flag 1 or empty list if none"]}'
     )
 
     def __init__(
@@ -328,10 +341,10 @@ class ClinicalEvidenceRetriever:
                 }
                 for p in pubmed_papers
             ],
-            "clinical_summary": clinical_analysis.get("clinical_summary", ""),
-            "diagnostic_criteria": clinical_analysis.get("diagnostic_criteria_met", []),
-            "key_findings": clinical_analysis.get("key_findings", []),
-            "red_flags": clinical_analysis.get("red_flags", []),
+            "clinical_summary": str(clinical_analysis.get("clinical_summary", "")),
+            "diagnostic_criteria": _ensure_str_list(clinical_analysis.get("diagnostic_criteria_met")),
+            "key_findings": _ensure_str_list(clinical_analysis.get("key_findings")),
+            "red_flags": _ensure_str_list(clinical_analysis.get("red_flags")),
             "elapsed_sec": round(elapsed, 2),
         }
 

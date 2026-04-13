@@ -9,6 +9,7 @@ Provides:
 from __future__ import annotations
 
 import json
+import logging
 import os
 import pickle
 import warnings
@@ -22,6 +23,7 @@ import shap
 import xgboost as xgb
 
 warnings.filterwarnings("ignore")
+log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Paths (resolved relative to this file so the module works from any cwd)
@@ -92,6 +94,9 @@ class PCOSPredictor:
         self.scaler:        Any                       = None
         self.imputer:       Any                       = None
         self.explainer:     shap.TreeExplainer | None = None
+        self._fallback_medians: dict[str, float]      = {}
+        self._fallback_means:   dict[str, float]      = {}
+        self._fallback_stds:    dict[str, float]      = {}
         self._loaded:       bool                      = False
 
     # ── public: load ───────────────────────────────────────────────────────
@@ -116,8 +121,12 @@ class PCOSPredictor:
                 self.metadata = json.load(f)
             self.feature_names = self.metadata.get("feature_names", [])
         else:
-            # Infer feature names from the booster
             self.feature_names = self.model.get_booster().feature_names or []
+
+        # Build fallback statistics from metadata (always available via git)
+        self._fallback_medians = self.metadata.get("imputation_medians", {})
+        self._fallback_means = self.metadata.get("scaler_means", {})
+        self._fallback_stds = self.metadata.get("scaler_stds", {})
 
         # Scaler / imputer from feature engineering pipeline
         if self.pkl_path.exists():
@@ -125,17 +134,28 @@ class PCOSPredictor:
                 proc = pickle.load(f)
             self.scaler  = proc.get("scaler")
             self.imputer = proc.get("imputer")
-            # Use persisted feature names if metadata is missing
             if not self.feature_names:
                 self.feature_names = proc.get("feature_names", [])
+        elif self._fallback_medians:
+            log.warning(
+                "features_processed.pkl not found; using metadata fallback "
+                "for imputation and scaling."
+            )
+        else:
+            log.warning(
+                "features_processed.pkl not found AND model_metadata.json has "
+                "no imputation_medians. Predictions will be unreliable."
+            )
 
         # SHAP explainer
         self.explainer = shap.TreeExplainer(self.model)
 
         self._loaded = True
-        print(
-            f"PCOSPredictor loaded  |  features={len(self.feature_names)}"
-            f"  |  AUROC={self.metadata.get('auroc', 'N/A')}"
+        log.info(
+            "PCOSPredictor loaded  |  features=%d  |  AUROC=%s  |  pkl=%s",
+            len(self.feature_names),
+            self.metadata.get("auroc", "N/A"),
+            "yes" if self.scaler is not None else "fallback",
         )
         return self
 
@@ -146,6 +166,41 @@ class PCOSPredictor:
         if cls._instance is None:
             cls._instance = cls().load()
         return cls._instance
+
+    @staticmethod
+    def _fill_engineered_features(row: dict[str, Any]) -> None:
+        """
+        Derive the same composite columns used in training (see notebooks/02_features.ipynb)
+        so they are not left NaN and then imputed to PCOS-heavy training medians.
+        """
+        eps = 1e-6
+        fl_k, fr_k = "Follicle No. (L)", "Follicle No. (R)"
+        if fl_k in row and fr_k in row:
+            fl, fr = row.get(fl_k), row.get(fr_k)
+            if fl is not None and fr is not None:
+                try:
+                    fl_f, fr_f = float(fl), float(fr)
+                    if np.isfinite(fl_f) and np.isfinite(fr_f):
+                        if "follicle_total" in row:
+                            row["follicle_total"] = fl_f + fr_f
+                        if "follicle_asymmetry" in row:
+                            row["follicle_asymmetry"] = abs(fl_f - fr_f)
+                except (TypeError, ValueError):
+                    pass
+
+        lh_k, fsh_k = "LH(mIU/mL)", "FSH(mIU/mL)"
+        if lh_k in row and fsh_k in row:
+            lh_v, fsh_v = row.get(lh_k), row.get(fsh_k)
+            if lh_v is not None and fsh_v is not None:
+                try:
+                    lh_f, fsh_f = float(lh_v), float(fsh_v)
+                    if np.isfinite(lh_f) and np.isfinite(fsh_f):
+                        if "LH_FSH_ratio" in row:
+                            row["LH_FSH_ratio"] = lh_f / (fsh_f + eps)
+                        if "FSH/LH" in row:
+                            row["FSH/LH"] = fsh_f / (lh_f + eps)
+                except (TypeError, ValueError):
+                    pass
 
     # ── public: predict ────────────────────────────────────────────────────
     def predict(
@@ -171,6 +226,7 @@ class PCOSPredictor:
 
         # Build feature vector (in correct column order)
         row = {feat: patient.get(feat, np.nan) for feat in self.feature_names}
+        self._fill_engineered_features(row)
         X_raw = pd.DataFrame([row], columns=self.feature_names)
 
         # Impute → scale
@@ -179,12 +235,25 @@ class PCOSPredictor:
                 self.imputer.transform(X_raw),
                 columns=self.feature_names,
             )
+        elif self._fallback_medians:
+            medians = pd.Series(
+                {f: self._fallback_medians[f] for f in self.feature_names},
+            )
+            X_imp = X_raw.fillna(medians)
         else:
-            X_imp = X_raw.fillna(X_raw.median())
+            X_imp = X_raw.fillna(0.0)
 
         if self.scaler is not None:
             X_scaled = pd.DataFrame(
                 self.scaler.transform(X_imp),
+                columns=self.feature_names,
+            )
+        elif self._fallback_means and self._fallback_stds:
+            means = np.array([self._fallback_means[f] for f in self.feature_names])
+            stds = np.array([self._fallback_stds[f] for f in self.feature_names])
+            stds = np.where(stds < 1e-10, 1.0, stds)
+            X_scaled = pd.DataFrame(
+                (X_imp.values - means) / stds,
                 columns=self.feature_names,
             )
         else:
