@@ -2,7 +2,7 @@
   "version": 1,
   "locale": "C.UTF-8",
   "metadata": {
-    "appmode": "python-api",
+    "appmode": "python-fastapi",
     "entrypoint": "src.api.main:app"
   },
   "python": {
@@ -36,7 +36,7 @@
       "checksum": "c8111c493dc50b1dbd7f955de94192e6"
     },
     "docs/presentation.html": {
-      "checksum": "d55abb593fa0df91f59567e6ebed99f1"
+      "checksum": "5955c3db25f32d153f61ddaf331f267c"
     },
     "models/model_metadata.json": {
       "checksum": "5c26b2bdcea885fc6ef977263e74e625"
