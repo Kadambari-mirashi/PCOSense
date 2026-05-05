@@ -1,5 +1,7 @@
 # PCOSense: Multi-Agent System for Polycystic Ovary Syndrome Detection
 
+<!-- deploy:1 -->
+
 > AI-powered PCOS screening tool using a multi-agent architecture, LLM-backed reasoning, and explainable ML.
 
 ---
