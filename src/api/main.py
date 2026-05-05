@@ -33,17 +33,42 @@ _orchestrator: PCOSOrchestrator | None = None
 _qc: QualityController | None = None
 
 
-def get_orchestrator() -> PCOSOrchestrator:
-    """Return singleton orchestrator; safe to call after startup."""
+def _init_singletons() -> None:
+    """Idempotent initialiser for the orchestrator + QC singletons.
+
+    Used by both the FastAPI lifespan and direct callers (e.g. the Shiny
+    app when it is the deployment entrypoint and FastAPI's lifespan never
+    runs).
+    """
+    global _orchestrator, _qc
+    if _orchestrator is not None and _qc is not None:
+        return
     if _orchestrator is None:
-        raise RuntimeError("Orchestrator not initialized — call during startup")
+        db = SupabaseClient()
+        _orchestrator = PCOSOrchestrator(db=db if db.is_configured() else None)
+    if _qc is None:
+        _qc = QualityController()
+    # Preload XGBoost + SHAP so the first assessment is hot.
+    try:
+        from src.ml_model import PCOSPredictor
+        PCOSPredictor.get_instance()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Predictor preload failed: %s", exc)
+
+
+def get_orchestrator() -> PCOSOrchestrator:
+    """Return singleton orchestrator; lazy-initialises on first call."""
+    if _orchestrator is None:
+        _init_singletons()
+    assert _orchestrator is not None
     return _orchestrator
 
 
 def get_qc() -> QualityController:
-    """Return singleton QC controller; safe to call after startup."""
+    """Return singleton QC controller; lazy-initialises on first call."""
     if _qc is None:
-        raise RuntimeError("QualityController not initialized — call during startup")
+        _init_singletons()
+    assert _qc is not None
     return _qc
 
 
@@ -52,18 +77,7 @@ async def lifespan(app: FastAPI):
     global _orchestrator, _qc
     logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
-    # Initialize heavy resources once at startup, not on first request
-    db = SupabaseClient()
-    _orchestrator = PCOSOrchestrator(db=db if db.is_configured() else None)
-    _qc = QualityController()
-
-    # Preload XGBoost predictor + SHAP explainer so the first request is fast.
-    try:
-        from src.ml_model import PCOSPredictor
-        PCOSPredictor.get_instance()
-    except Exception as exc:  # noqa: BLE001
-        log.warning("Predictor preload failed: %s", exc)
-
+    _init_singletons()
     log.info("PCOSense pipeline initialized")
     yield
     _orchestrator = None

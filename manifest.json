@@ -2,8 +2,8 @@
   "version": 1,
   "locale": "C.UTF-8",
   "metadata": {
-    "appmode": "python-fastapi",
-    "entrypoint": "src.api.main:app"
+    "appmode": "python-shiny",
+    "entrypoint": "src.app.app:app"
   },
   "python": {
     "version": "3.12.13",
@@ -24,7 +24,7 @@
       "checksum": "6e7918d792659a8d44a744176386af2f"
     },
     "README.md": {
-      "checksum": "a1ef9ce52e74796e68f9a53e69acd2b8"
+      "checksum": "0726cd9f159999d8da2604527b134e82"
     },
     "data/processed/eda_meta.json": {
       "checksum": "558ee433f04780724403ba2314c74ff5"
@@ -105,7 +105,7 @@
       "checksum": "38c33ea4a24f8699ecbaa6015cf29520"
     },
     "src/api/main.py": {
-      "checksum": "e1c543db2cd9102b3ed11a75b2672ffe"
+      "checksum": "5a27a96f4dbbbdeccc2f6745b7b9574c"
     },
     "src/api/schemas.py": {
       "checksum": "fde3a0a6e4e067d667300fbc4ca32bde"
@@ -120,7 +120,7 @@
       "checksum": "19a55c525e3ce2a541821d7105f3fbb2"
     },
     "src/app/app.py": {
-      "checksum": "b1ba74ef6e411343656262c810c0a514"
+      "checksum": "3300f6e7be09b1a58823e7d53400c42d"
     },
     "src/data_fetcher.py": {
       "checksum": "ec78687bff753b6a342dc81810fc17b7"
