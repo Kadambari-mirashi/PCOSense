@@ -1393,22 +1393,24 @@ app_ui = ui.page_sidebar(
 def server(input: Any, output: Any, session: Any) -> None:
     form_error = reactive.Value(None)
 
-    @reactive.poll(lambda: int(time.time() // 60), interval_secs=60)
     def api_health_ok() -> bool:
-        # In single-service mode the API and UI live in the same process,
-        # so we just verify the orchestrator can be obtained.
+        """Best-effort health probe.
+
+        Shiny renderers swallow exceptions silently, so this MUST never raise.
+        We try the in-process orchestrator first (single-service deploys like
+        Posit Connect) and fall back to an HTTP health check otherwise.
+        """
         try:
             from src.api.main import get_orchestrator
             get_orchestrator()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-        # Fallback: try HTTP health check (split-mode deployments)
         try:
             with httpx.Client(timeout=4.0) as client:
                 client.get(HEALTH_URL).raise_for_status()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     @render.ui
@@ -1535,7 +1537,12 @@ def server(input: Any, output: Any, session: Any) -> None:
 
     @render.ui
     def api_status_banner() -> ui.Tag:
-        ok = api_health_ok()
+        # NEVER let an exception escape: the renderer must always emit
+        # the banner, otherwise the whole component disappears silently.
+        try:
+            ok = api_health_ok()
+        except Exception:  # noqa: BLE001
+            ok = False
         if ok:
             return ui.div(
                 ui.span(class_="pcos-api-dot pcos-api-dot--ok"),
