@@ -1,6 +1,6 @@
 # PCOSense: Multi-Agent System for Polycystic Ovary Syndrome Detection
 
-> AI-powered PCOS screening tool using a multi-agent architecture, local LLM, and explainable ML.
+> AI-powered PCOS screening tool using a multi-agent architecture, LLM-backed reasoning, and explainable ML.
 
 ---
 
@@ -12,7 +12,7 @@ PCOSense is a full-stack clinical decision-support application that estimates PC
 - **SHAP explainability** — shows which biomarkers drive each individual prediction
 - **Multi-agent AI system** — 3 specialised agents orchestrated sequentially
 - **RAG knowledge base** — 27 clinical papers in ChromaDB for evidence retrieval
-- **Ollama + Llama 3.2** — local LLM, zero API cost, runs entirely on your machine
+- **OpenAI or Ollama** — cloud-ready OpenAI backend with local Ollama fallback
 - **PubMed API + NHANES data** — latest research and population-level context
 - **Quality Control system** — per-assessment validation scores surfaced in the UI
 - **Supabase** — patient session storage, predictions, and audit trail
@@ -26,7 +26,7 @@ PCOSense is a full-stack clinical decision-support application that estimates PC
 | Frontend | Python Shiny |
 | Backend | FastAPI + Uvicorn |
 | ML Model | XGBoost + SHAP |
-| LLM | Ollama · Llama 3.2 (local) |
+| LLM | OpenAI (default in cloud) or Ollama (local fallback) |
 | Vector DB | ChromaDB (RAG — 27 clinical papers) |
 | Database | Supabase (PostgreSQL) |
 | APIs | PubMed E-Utilities · NHANES population data |
@@ -218,7 +218,12 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2 — Install Ollama & pull models
+### 2 — Choose LLM backend
+
+You have two supported options:
+
+- **Cloud / deployment friendly (recommended):** set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) in `.env` or your hosting platform environment variables.
+- **Local only:** run Ollama and pull models:
 
 ```bash
 # Install Ollama from https://ollama.ai/download, then:
@@ -230,8 +235,10 @@ ollama pull nomic-embed-text
 
 ```bash
 cp .env.example .env
-# Edit .env — set SUPABASE_URL and SUPABASE_KEY if using persistence
-# CORS_ORIGINS defaults to localhost:3838; set it for any other deployment
+# Edit .env:
+# - Set OPENAI_API_KEY for cloud deployment (recommended), or keep Ollama vars for local
+# - Set SUPABASE_URL and SUPABASE_KEY only if you want persistence
+# - Set CORS_ORIGINS to your deployed frontend origin(s)
 ```
 
 ### 4 — Set up Supabase tables (skip if not using persistence)
@@ -291,11 +298,17 @@ python src/ollama_client.py  # Test Ollama connection
 python src/agents.py         # Test full multi-agent pipeline
 ```
 
-### 7 — Run the API
+### 7 — Run app (single-service mode, recommended)
 
 ```bash
 uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+This launches:
+
+- FastAPI endpoints at `/api/v1/*`
+- Swagger docs at `/docs`
+- Shiny frontend at `/` (mounted by FastAPI)
 
 | Endpoint | Description |
 |----------|-------------|
@@ -307,15 +320,50 @@ uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
 
 **Assessment request keys:** `age`, `bmi`, `cycle_ri` (1=regular, 2=irregular), `lh`, `fsh`, `tsh`, `hair_growth`, `skin_darkening`, `pimples`, `weight_gain`, `follicle_l`, `follicle_r`, `cycle_length_days`
 
-### 8 — Run the Shiny frontend
+### 8 — Optional split-mode (advanced)
 
-In a second terminal (API must already be running):
+You can still run Shiny as a separate process if desired:
 
 ```bash
 shiny run src/app/app.py --reload --host 127.0.0.1 --port 3838
 ```
 
 Open [http://127.0.0.1:3838](http://127.0.0.1:3838).
+
+In this mode, set `PCOSENSE_API_URL` to your API base URL.
+
+---
+
+## Deployment (Posit Connect / Render)
+
+### Service entrypoint
+
+Use a single web service entrypoint:
+
+```bash
+uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+### Required environment variables
+
+- `OPENAI_API_KEY` (recommended for hosted deployments)
+- `CORS_ORIGINS` (set to your public frontend origin)
+
+### Optional environment variables
+
+- `OPENAI_MODEL` (default `gpt-4o-mini`)
+- `SUPABASE_URL`, `SUPABASE_KEY` (only for persistence)
+- `PCOSENSE_API_URL` (needed only for split frontend/backend deployments)
+- `PORT` (provided by most hosts)
+
+### Deploy smoke test
+
+After deploy, verify:
+
+1. `GET /api/v1/health` returns `{"status":"ok",...}`
+2. `/docs` loads
+3. `/` loads the Shiny UI
+4. Submit one assessment successfully
 
 ---
 
@@ -339,7 +387,9 @@ The overall score and individual checks are displayed in the results dashboard. 
 - `.env` is never committed — contains Supabase credentials
 - `kaggle.json` is never committed — only needed to download raw training data
 - `models/pcos_model.json` is committed — no retraining needed to run the app
-- All LLM inference runs locally via Ollama — zero API costs
+- LLM backend selection is automatic:
+  - uses OpenAI when `OPENAI_API_KEY` is set
+  - otherwise falls back to local Ollama
 - PubMed and NHANES APIs are public and require no authentication
 - The app runs fully offline after initial setup, except for live PubMed queries
 - For non-localhost deployments, set `CORS_ORIGINS` in `.env` to your frontend URL
