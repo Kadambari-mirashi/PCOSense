@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PCOSense — Product Demonstration</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --teal: #008080;
+      --teal-dk: #006666;
+      --teal-lt: #4DB8B8;
+      --teal-bg: #F0FAFA;
+      --teal-border: #D4EDED;
+      --mint: #A8E6CF;
+      --coral: #E88B8B;
+      --text: #1A2E2E;
+      --text-muted: #5A7A7A;
+      --surface: #FFFFFF;
+      --bg: #FAFCFC;
+    }
+
+    .reveal {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--text);
+    }
+    .reveal h1, .reveal h2, .reveal h3 {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--teal-dk);
+      font-weight: 700;
+      text-transform: none;
+      letter-spacing: -0.02em;
+    }
+    .reveal h1 { font-size: 2.2em; }
+    .reveal h2 { font-size: 1.4em; border-bottom: 3px solid var(--teal-lt); padding-bottom: 0.3em; display: inline-block; }
+    .reveal h3 { font-size: 0.95em; color: var(--teal); }
+
+    .reveal .slides section { overflow: visible; }
+    .reveal .slides { text-align: center; }
+
+    .reveal .slide-number { color: var(--teal); font-weight: 600; }
+
+    .title-slide h1 {
+      font-size: 2.8em;
+      background: linear-gradient(135deg, var(--teal-dk), var(--teal-lt));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .title-slide .subtitle {
+      font-size: 1.1em;
+      color: var(--text-muted);
+      margin-top: 0.5em;
+    }
+    .title-slide .team {
+      font-size: 0.8em;
+      color: var(--text-muted);
+      margin-top: 1.8em;
+    }
+    .title-slide .team strong {
+      color: var(--teal-dk);
+    }
+
+    .reveal section ul { text-align: left; }
+    .reveal section li {
+      margin-bottom: 0.35em;
+      font-size: 0.75em;
+      line-height: 1.45;
+    }
+
+    .section-label {
+      font-size: 0.6em;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--teal);
+      font-weight: 700;
+      margin-bottom: 0.3em;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.8rem;
+      margin: 1rem 0;
+    }
+    .metric-card {
+      background: linear-gradient(135deg, var(--teal-bg), white);
+      border-radius: 12px;
+      padding: 0.9rem;
+      text-align: center;
+      border: 1px solid var(--teal-border);
+    }
+    .metric-card .value {
+      font-size: 1.7em;
+      font-weight: 800;
+      color: var(--teal-dk);
+      display: block;
+    }
+    .metric-card .label {
+      font-size: 0.6em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.2em;
+    }
+
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .arch-box {
+      background: var(--teal);
+      color: white;
+      border-radius: 10px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.68em;
+      font-weight: 600;
+      min-width: 105px;
+      text-align: center;
+    }
+    .arch-box.light { background: var(--teal-lt); color: var(--teal-dk); }
+    .arch-box.dark { background: var(--teal-dk); }
+    .arch-box.coral { background: var(--coral); color: white; }
+    .arch-arrow {
+      font-size: 1.4em;
+      color: var(--teal-lt);
+      font-weight: bold;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      text-align: left;
+      align-items: start;
+    }
+    .two-col ul { margin: 0; padding-left: 1.2em; }
+
+    table.styled {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.62em;
+      margin: 0.8rem 0;
+    }
+    table.styled th {
+      background: var(--teal);
+      color: white;
+      padding: 0.55rem 0.8rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    table.styled td {
+      padding: 0.5rem 0.8rem;
+      border-bottom: 1px solid var(--teal-border);
+    }
+    table.styled tr:nth-child(even) { background: var(--teal-bg); }
+
+    .qc-bar-container { margin: 0.4rem 0; }
+    .qc-bar-label {
+      font-size: 0.65em;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.15rem;
+    }
+    .qc-bar {
+      background: var(--teal-border);
+      border-radius: 20px;
+      height: 22px;
+      overflow: hidden;
+    }
+    .qc-bar-fill {
+      height: 100%;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      color: white;
+      font-size: 0.6em;
+      font-weight: 700;
+    }
+    .qc-bar-fill.high { background: linear-gradient(90deg, var(--teal-lt), var(--teal-dk)); }
+    .qc-bar-fill.med { background: linear-gradient(90deg, var(--teal-lt), var(--teal)); }
+
+    .callout {
+      background: var(--teal-bg);
+      border-left: 4px solid var(--teal);
+      border-radius: 8px;
+      padding: 0.7rem 1rem;
+      margin: 0.8rem 0;
+      text-align: left;
+      font-size: 0.72em;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25em 0.75em;
+      border-radius: 20px;
+      font-size: 0.62em;
+      font-weight: 600;
+      margin: 0.2em;
+    }
+    .badge-teal { background: var(--teal-bg); color: var(--teal-dk); border: 1px solid var(--teal-border); }
+    .badge-green { background: #E6F7F0; color: #2D6A4F; border: 1px solid #C8EBD8; }
+    .badge-blue { background: #E8F4FD; color: #1E5F8A; border: 1px solid #C8E4F5; }
+
+    .agenda-list {
+      text-align: left;
+      max-width: 600px;
+      margin: 1.5rem auto;
+    }
+    .agenda-list li {
+      font-size: 0.85em;
+      padding: 0.4em 0;
+      border-bottom: 1px solid var(--teal-border);
+    }
+    .agenda-list li:last-child { border-bottom: none; }
+    .agenda-num {
+      display: inline-block;
+      width: 1.6em;
+      height: 1.6em;
+      line-height: 1.6em;
+      text-align: center;
+      background: var(--teal);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.75em;
+      font-weight: 700;
+      margin-right: 0.6em;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <!-- SLIDE 1: Title -->
+      <section class="title-slide">
+        <h1>PCOSense</h1>
+        <p class="subtitle">AI-Powered Multi-Agent System for<br>Polycystic Ovary Syndrome Detection</p>
+        <div style="margin-top:1.2rem;">
+          <span class="badge badge-teal">Multi-Agent AI</span>
+          <span class="badge badge-green">XGBoost ML</span>
+          <span class="badge badge-blue">RAG Pipeline</span>
+        </div>
+        <p class="team">
+          <strong>Team:</strong> Kadambari Mirashi &bull; Yashvi Gupta &bull; Shreya Dandwate &bull; Anjali Katta<br>
+          DSAI — App V3 Production Demonstration
+        </p>
+      </section>
+
+      <!-- SLIDE 2: Agenda -->
+      <section>
+        <h2>Agenda</h2>
+        <ol class="agenda-list">
+          <li><span class="agenda-num">1</span> Problem &amp; Motivation</li>
+          <li><span class="agenda-num">2</span> Solution Overview</li>
+          <li><span class="agenda-num">3</span> System Architecture</li>
+          <li><span class="agenda-num">4</span> Multi-Agent Workflow</li>
+          <li><span class="agenda-num">5</span> ML Model Performance</li>
+          <li><span class="agenda-num">6</span> Quality Control &amp; Validation</li>
+          <li><span class="agenda-num">7</span> Production Readiness</li>
+          <li><span class="agenda-num">8</span> Live Demo</li>
+        </ol>
+      </section>
+
+      <!-- SLIDE 3: The Problem -->
+      <section>
+        <p class="section-label">01 &mdash; Problem</p>
+        <h2>Why PCOSense?</h2>
+        <div class="two-col">
+          <div>
+            <h3>PCOS: A Silent Epidemic</h3>
+            <ul>
+              <li>Affects <strong>1 in 10</strong> women of reproductive age</li>
+              <li>Up to <strong>70% of cases go undiagnosed</strong></li>
+              <li>Requires multiple specialist visits &amp; expensive labs</li>
+              <li>Early detection prevents metabolic complications</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Gaps in Current Care</h3>
+            <ul>
+              <li>No accessible screening tools in primary care</li>
+              <li>Clinicians lack time to synthesize multi-factor evidence</li>
+              <li>Patients wait months for specialist referrals</li>
+              <li>Existing risk calculators offer no explainability</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 4: Solution -->
+      <section>
+        <p class="section-label">02 &mdash; Solution</p>
+        <h2>PCOSense Overview</h2>
+        <div class="callout">
+          <strong>PCOSense</strong> is a clinical decision-support tool that estimates PCOS risk from 13 patient biomarkers using explainable ML and a multi-agent AI system — delivering an evidence-backed screening in under 30 seconds.
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <span class="value">0.95</span>
+            <span class="label">Model AUROC</span>
+          </div>
+          <div class="metric-card">
+            <span class="value">3</span>
+            <span class="label">Specialized AI Agents</span>
+          </div>
+          <div class="metric-card">
+            <span class="value">27</span>
+            <span class="label">Clinical Papers (RAG)</span>
+          </div>
+        </div>
+        <p style="font-size:0.72em; color:var(--text-muted); text-align:center;">
+          <strong>Stakeholders:</strong> Primary care physicians &bull; Gynecologists &bull; Patients seeking preliminary screening
+        </p>
+      </section>
+
+      <!-- SLIDE 5: Architecture -->
+      <section>
+        <p class="section-label">03 &mdash; Architecture</p>
+        <h2>Tech Stack</h2>
+        <table class="styled">
+          <tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr>
+          <tr><td>Frontend</td><td>Python Shiny</td><td>Patient intake form + results dashboard</td></tr>
+          <tr><td>Backend</td><td>FastAPI + Uvicorn</td><td>REST API &amp; agent orchestration</td></tr>
+          <tr><td>ML Model</td><td>XGBoost + SHAP</td><td>Risk prediction + explainability</td></tr>
+          <tr><td>LLM</td><td>OpenAI / Ollama (fallback)</td><td>Agent reasoning &amp; evidence synthesis</td></tr>
+          <tr><td>Vector DB</td><td>ChromaDB</td><td>RAG over 27 clinical papers</td></tr>
+          <tr><td>Database</td><td>Supabase (PostgreSQL)</td><td>Persistence &amp; audit trail</td></tr>
+          <tr><td>External APIs</td><td>PubMed + NHANES</td><td>Latest research + population baselines</td></tr>
+        </table>
+        <div class="arch-flow">
+          <div class="arch-box light">Patient Input</div>
+          <span class="arch-arrow">&rarr;</span>
+          <div class="arch-box">FastAPI</div>
+          <span class="arch-arrow">&rarr;</span>
+          <div class="arch-box dark">3 Agents</div>
+          <span class="arch-arrow">&rarr;</span>
+          <div class="arch-box">XGBoost + RAG</div>
+          <span class="arch-arrow">&rarr;</span>
+          <div class="arch-box light">Results + QC</div>
+        </div>
+      </section>
+
+      <!-- SLIDE 6: Multi-Agent Workflow -->
+      <section>
+        <p class="section-label">04 &mdash; Agentic Loop</p>
+        <h2>Multi-Agent Pipeline</h2>
+        <div class="arch-flow" style="margin-bottom:1.5rem;">
+          <div class="arch-box" style="background:var(--teal-lt); color:var(--teal-dk);">Agent 1<br><small>Data Validator</small></div>
+          <span class="arch-arrow">&rarr;</span>
+          <div class="arch-box dark">Agent 2<br><small>Evidence Retriever</small></div>
+          <span class="arch-arrow">&rarr;</span>
+          <div class="arch-box" style="background:#5BA3A3;">Agent 3<br><small>Risk Assessor</small></div>
+        </div>
+        <div class="two-col" style="font-size:0.9em;">
+          <div>
+            <h3>Agent 1: Data Validator</h3>
+            <ul>
+              <li>Range &amp; completeness checks</li>
+              <li>LLM consistency reasoning</li>
+              <li>Flags implausible combinations</li>
+            </ul>
+            <h3>Agent 2: Evidence Retriever</h3>
+            <ul>
+              <li>ChromaDB search (27 papers)</li>
+              <li>PubMed latest research fetch</li>
+              <li>LLM-synthesized clinical summary</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Agent 3: Risk Assessor</h3>
+            <ul>
+              <li>XGBoost prediction (risk 0&ndash;1)</li>
+              <li>SHAP feature contributions</li>
+              <li>NHANES population percentiles</li>
+              <li>LLM-synthesized recommendation</li>
+            </ul>
+            <h3>Design Principles</h3>
+            <ul>
+              <li>Sequential orchestration with structured JSON</li>
+              <li>Each agent has specialized tools</li>
+              <li>QC validation at every stage</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 7: ML Performance -->
+      <section>
+        <p class="section-label">05 &mdash; Model</p>
+        <h2>ML Model Performance</h2>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <span class="value">0.9528</span>
+            <span class="label">AUROC</span>
+          </div>
+          <div class="metric-card">
+            <span class="value">541</span>
+            <span class="label">Training Patients</span>
+          </div>
+          <div class="metric-card">
+            <span class="value">&lt;50ms</span>
+            <span class="label">Inference Time</span>
+          </div>
+        </div>
+        <div class="two-col">
+          <div>
+            <h3>Training Details</h3>
+            <ul>
+              <li>XGBoost Classifier</li>
+              <li>42 engineered features</li>
+              <li>80/20 stratified split</li>
+              <li>Youden's J threshold optimization</li>
+              <li>SHAP TreeExplainer per prediction</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Top Predictive Features</h3>
+            <ul>
+              <li><strong>Morphological:</strong> Follicle count L/R</li>
+              <li><strong>Symptoms:</strong> Hair growth, weight gain</li>
+              <li><strong>Hormonal:</strong> LH/FSH ratio, TSH</li>
+              <li><strong>Cycle:</strong> Regularity, length</li>
+              <li><strong>Metabolic:</strong> BMI, RBS</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 8: Quality Control -->
+      <section>
+        <p class="section-label">06 &mdash; Quality Control</p>
+        <h2>QC &amp; Validation System</h2>
+        <p style="font-size:0.75em; margin-bottom:0.8rem;">Every assessment generates a scored QC report — visible to users in the dashboard:</p>
+        <table class="styled">
+          <tr><th>Component</th><th>Weight</th><th>Measures</th></tr>
+          <tr><td>Input Validation</td><td>20%</td><td>Data completeness &amp; plausibility</td></tr>
+          <tr><td>Model Confidence</td><td>50%</td><td>XGBoost prediction strength</td></tr>
+          <tr><td>Plausibility Check</td><td>20%</td><td>Joint model &times; input quality</td></tr>
+          <tr><td>RAG Evidence</td><td>10%</td><td>Clinical literature retrieval quality</td></tr>
+        </table>
+        <div style="max-width:600px; margin:1rem auto;">
+          <div class="qc-bar-container">
+            <div class="qc-bar-label">Overall Quality Score</div>
+            <div class="qc-bar"><div class="qc-bar-fill high" style="width:87%;">87% &mdash; HIGH</div></div>
+          </div>
+          <div class="qc-bar-container">
+            <div class="qc-bar-label">Model Confidence</div>
+            <div class="qc-bar"><div class="qc-bar-fill high" style="width:92%;">92%</div></div>
+          </div>
+          <div class="qc-bar-container">
+            <div class="qc-bar-label">RAG Evidence Score</div>
+            <div class="qc-bar"><div class="qc-bar-fill med" style="width:78%;">78%</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 9: AI Performance Evidence -->
+      <section>
+        <p class="section-label">06 &mdash; Quality Control (cont.)</p>
+        <h2>Evidence of AI Performance</h2>
+        <div class="two-col">
+          <div>
+            <h3>Quantitative Evidence</h3>
+            <ul>
+              <li>AUROC <strong>0.9528</strong> on held-out test set</li>
+              <li>Per-assessment QC scores in UI</li>
+              <li><code>/api/v1/quality-summary</code> aggregate endpoint</li>
+              <li>Validation flags catch bad inputs pre-prediction</li>
+              <li>Full audit trail in Supabase</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Reliability Safeguards</h3>
+            <ul>
+              <li>SHAP explainability for every prediction</li>
+              <li>LLM fallback: OpenAI &rarr; Ollama</li>
+              <li>Dual validation (programmatic + LLM)</li>
+              <li>RAG grounding prevents hallucination</li>
+              <li>NHANES population comparison</li>
+              <li>PubMed integration for current evidence</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout" style="text-align:center;">
+          Users see QC scores, validation flags, and confidence levels alongside results &mdash; <strong>full transparency</strong>.
+        </div>
+      </section>
+
+      <!-- SLIDE 10: Production Readiness -->
+      <section>
+        <p class="section-label">07 &mdash; Production</p>
+        <h2>Production Readiness</h2>
+        <table class="styled">
+          <tr><th>Criterion</th><th>Implementation</th></tr>
+          <tr><td>Stakeholder Alignment</td><td>Designed for clinicians needing quick evidence-backed screening</td></tr>
+          <tr><td>Clarity</td><td>Guided form with clear labels; results organized by priority</td></tr>
+          <tr><td>Streamlining</td><td>Single-page workflow: input &rarr; assess &rarr; results (no clutter)</td></tr>
+          <tr><td>Efficiency</td><td>&lt;50ms ML inference; async extended_task for non-blocking UI</td></tr>
+          <tr><td>Reliability</td><td>LLM fallback chain; multi-stage validation; error handling</td></tr>
+        </table>
+        <div class="metric-grid" style="grid-template-columns: repeat(4, 1fr); margin-top:1.2rem;">
+          <div class="metric-card">
+            <span class="value" style="font-size:1.3em;">1</span>
+            <span class="label">Service Entry</span>
+          </div>
+          <div class="metric-card">
+            <span class="value" style="font-size:1.3em;">5</span>
+            <span class="label">API Endpoints</span>
+          </div>
+          <div class="metric-card">
+            <span class="value" style="font-size:1.3em;">13</span>
+            <span class="label">Input Features</span>
+          </div>
+          <div class="metric-card">
+            <span class="value" style="font-size:1.3em;">~30s</span>
+            <span class="label">Full Assessment</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SLIDE 11: Live Demo -->
+      <section>
+        <p class="section-label">08 &mdash; Demo</p>
+        <h2>Live Demonstration</h2>
+        <div class="callout" style="text-align:center; font-size:0.9em;">
+          <strong>Demo Flow</strong><br><br>
+          <span class="badge badge-teal">1. Enter Biomarkers</span>
+          <span class="arch-arrow" style="font-size:1em;">&rarr;</span>
+          <span class="badge badge-teal">2. Submit Assessment</span>
+          <span class="arch-arrow" style="font-size:1em;">&rarr;</span>
+          <span class="badge badge-teal">3. View Risk Score</span>
+          <span class="arch-arrow" style="font-size:1em;">&rarr;</span>
+          <span class="badge badge-teal">4. SHAP Factors</span>
+          <span class="arch-arrow" style="font-size:1em;">&rarr;</span>
+          <span class="badge badge-teal">5. QC Metrics</span>
+        </div>
+        <div style="margin-top:2rem; text-align:center;">
+          <p style="font-size:1em; color:var(--teal-dk); font-weight:700;">Switching to live application...</p>
+          <p style="font-size:0.75em; color:var(--text-muted);">(Insert deployed app URL here)</p>
+        </div>
+      </section>
+
+      <!-- SLIDE 12: Summary -->
+      <section>
+        <h2>Key Takeaways</h2>
+        <div style="text-align:left; max-width:700px; margin:0 auto;">
+          <ul style="font-size:0.82em; line-height:1.9;">
+            <li><strong>Problem:</strong> 70% of PCOS cases undiagnosed; no accessible screening</li>
+            <li><strong>Solution:</strong> Explainable ML + multi-agent clinical decision support</li>
+            <li><strong>Model:</strong> XGBoost &mdash; AUROC 0.9528 with SHAP explainability</li>
+            <li><strong>Agents:</strong> 3-agent pipeline (validate &rarr; retrieve &rarr; assess)</li>
+            <li><strong>Quality:</strong> Per-assessment QC scores visible to users</li>
+            <li><strong>RAG:</strong> 27 clinical papers + live PubMed</li>
+            <li><strong>Deployed:</strong> Production-ready, single-service, cloud-accessible</li>
+          </ul>
+        </div>
+        <div style="margin-top:1.2rem; text-align:center;">
+          <span class="badge badge-teal" style="font-size:0.75em;">github.com/Kadambari-mirashi/PCOSense</span>
+        </div>
+      </section>
+
+      <!-- SLIDE 13: Thank You -->
+      <section class="title-slide">
+        <h1>Thank You!</h1>
+        <p class="subtitle">Questions?</p>
+        <div style="margin-top:1.5rem;">
+          <span class="badge badge-teal" style="font-size:0.75em;">github.com/Kadambari-mirashi/PCOSense</span>
+        </div>
+        <p class="team">
+          <strong>Team:</strong> Kadambari Mirashi &bull; Yashvi Gupta &bull; Shreya Dandwate &bull; Anjali Katta
+        </p>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      transitionSpeed: 'default',
+      center: true,
+      width: 1100,
+      height: 750,
+      margin: 0.04,
+      minScale: 0.2,
+      maxScale: 2.0
+    });
+  </script>
+</body>
+</html>
