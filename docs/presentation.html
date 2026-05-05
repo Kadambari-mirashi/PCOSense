@@ -354,43 +354,21 @@
       <section>
         <p class="section-label">04 &mdash; Agentic Loop</p>
         <h2>Multi-Agent Pipeline</h2>
-        <div class="arch-flow" style="margin-bottom:1.5rem;">
+        <div class="arch-flow" style="margin-bottom:1rem;">
           <div class="arch-box" style="background:var(--teal-lt); color:var(--teal-dk);">Agent 1<br><small>Data Validator</small></div>
           <span class="arch-arrow">&rarr;</span>
           <div class="arch-box dark">Agent 2<br><small>Evidence Retriever</small></div>
           <span class="arch-arrow">&rarr;</span>
           <div class="arch-box" style="background:#5BA3A3;">Agent 3<br><small>Risk Assessor</small></div>
         </div>
-        <div class="two-col" style="font-size:0.9em;">
-          <div>
-            <h3>Agent 1: Data Validator</h3>
-            <ul>
-              <li>Range &amp; completeness checks</li>
-              <li>LLM consistency reasoning</li>
-              <li>Flags implausible combinations</li>
-            </ul>
-            <h3>Agent 2: Evidence Retriever</h3>
-            <ul>
-              <li>ChromaDB search (27 papers)</li>
-              <li>PubMed latest research fetch</li>
-              <li>LLM-synthesized clinical summary</li>
-            </ul>
-          </div>
-          <div>
-            <h3>Agent 3: Risk Assessor</h3>
-            <ul>
-              <li>XGBoost prediction (risk 0&ndash;1)</li>
-              <li>SHAP feature contributions</li>
-              <li>NHANES population percentiles</li>
-              <li>LLM-synthesized recommendation</li>
-            </ul>
-            <h3>Design Principles</h3>
-            <ul>
-              <li>Sequential orchestration with structured JSON</li>
-              <li>Each agent has specialized tools</li>
-              <li>QC validation at every stage</li>
-            </ul>
-          </div>
+        <table class="styled">
+          <tr><th>Agent</th><th>Tools Used</th><th>Output</th></tr>
+          <tr><td><strong>1 — Data Validator</strong></td><td>Programmatic checks + LLM reasoning</td><td>Confidence score &amp; validation flags</td></tr>
+          <tr><td><strong>2 — Evidence Retriever</strong></td><td>ChromaDB (27 papers) + PubMed API + LLM</td><td>Clinical summary &amp; cited papers</td></tr>
+          <tr><td><strong>3 — Risk Assessor</strong></td><td>XGBoost + SHAP + NHANES + LLM</td><td>Risk score &amp; recommendation</td></tr>
+        </table>
+        <div class="callout" style="text-align:center;">
+          Sequential orchestration &bull; Structured JSON between agents &bull; QC validation at every stage
         </div>
       </section>
 
@@ -412,28 +390,13 @@
             <span class="label">Inference Time</span>
           </div>
         </div>
-        <div class="two-col">
-          <div>
-            <h3>Training Details</h3>
-            <ul>
-              <li>XGBoost Classifier</li>
-              <li>42 engineered features</li>
-              <li>80/20 stratified split</li>
-              <li>Youden's J threshold optimization</li>
-              <li>SHAP TreeExplainer per prediction</li>
-            </ul>
-          </div>
-          <div>
-            <h3>Top Predictive Features</h3>
-            <ul>
-              <li><strong>Morphological:</strong> Follicle count L/R</li>
-              <li><strong>Symptoms:</strong> Hair growth, weight gain</li>
-              <li><strong>Hormonal:</strong> LH/FSH ratio, TSH</li>
-              <li><strong>Cycle:</strong> Regularity, length</li>
-              <li><strong>Metabolic:</strong> BMI, RBS</li>
-            </ul>
-          </div>
-        </div>
+        <table class="styled">
+          <tr><th>Detail</th><th>Value</th></tr>
+          <tr><td>Algorithm</td><td>XGBoost Classifier + SHAP TreeExplainer</td></tr>
+          <tr><td>Features</td><td>42 engineered (incl. LH/FSH ratio, follicle composites)</td></tr>
+          <tr><td>Split</td><td>80/20 stratified, Youden's J threshold</td></tr>
+          <tr><td>Top Factors</td><td>Follicle count, hair growth, LH/FSH ratio, cycle regularity, BMI</td></tr>
+        </table>
       </section>
 
       <!-- SLIDE 8: Quality Control -->
