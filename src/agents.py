@@ -86,10 +86,20 @@ class DataValidatorAgent:
         "Avg. F size (R) (mm)": (1, 30),
     }
 
-    KEY_FIELDS = [
-        " Age (yrs)", "BMI", "Cycle(R/I)", "Follicle No. (L)",
-        "Follicle No. (R)", "LH(mIU/mL)", "FSH(mIU/mL)",
+    # Truly required for any meaningful screening: demographics + cycle pattern.
+    REQUIRED_FIELDS = [
+        " Age (yrs)", "BMI", "Cycle(R/I)",
     ]
+
+    # Advanced labs / ultrasound — optional. If missing, the model imputes
+    # them from population baselines (we don't penalise the user).
+    OPTIONAL_LAB_FIELDS = [
+        "Follicle No. (L)", "Follicle No. (R)",
+        "LH(mIU/mL)", "FSH(mIU/mL)",
+    ]
+
+    # Backward-compat alias (some callers / QC code reference KEY_FIELDS).
+    KEY_FIELDS = REQUIRED_FIELDS + OPTIONAL_LAB_FIELDS
 
     def __init__(self, ollama: OllamaClient) -> None:
         self.ollama = ollama
@@ -117,10 +127,23 @@ class DataValidatorAgent:
                     "severity": "warning" if (lo * 0.5 <= val <= hi * 1.5) else "error",
                 })
 
-        # ── missing key fields ──────────────────────────────────────────
-        missing = [f for f in self.KEY_FIELDS if patient_data.get(f) is None]
-        for f in missing:
-            flags.append({"field": f, "issue": "Required field missing", "severity": "warning"})
+        # ── missing required fields (warning) ───────────────────────────
+        for f in self.REQUIRED_FIELDS:
+            if patient_data.get(f) is None:
+                flags.append({
+                    "field": f,
+                    "issue": "Required field missing",
+                    "severity": "warning",
+                })
+
+        # ── missing optional labs (info, not a warning) ─────────────────
+        for f in self.OPTIONAL_LAB_FIELDS:
+            if patient_data.get(f) is None:
+                flags.append({
+                    "field": f,
+                    "issue": "Optional — not provided; population baseline used",
+                    "severity": "info",
+                })
 
         # ── BMI consistency check ───────────────────────────────────────
         weight = patient_data.get("Weight (Kg)")
@@ -282,12 +305,13 @@ class ClinicalEvidenceRetriever:
         query = self._build_query(validated_data)
         log.info("Evidence query: %s", query)
 
-        # ── Tool 1: Chroma local papers ─────────────────────────────────
+        # ── Tool 1: Chroma local papers (skip silently if not deployed) ─
         local_papers: list[dict] = []
-        try:
-            local_papers = self.rag.retrieve_papers(query, n_results=3)
-        except Exception as exc:
-            log.warning("Chroma retrieval failed: %s", exc)
+        if self.rag.chroma_dir.exists():
+            try:
+                local_papers = self.rag.retrieve_papers(query, n_results=3)
+            except Exception as exc:
+                log.warning("Chroma retrieval failed: %s", exc)
 
         # ── Tool 2: PubMed API ──────────────────────────────────────────
         pubmed_papers: list[dict] = []
@@ -389,6 +413,87 @@ class RiskAssessorAgent:
             self.predictor = PCOSPredictor.get_instance()
         return self.predictor
 
+    @staticmethod
+    def _fallback_recommendation(
+        risk_score: float,
+        risk_label: str,
+        top_factors: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Deterministic recommendation used when the LLM is unavailable.
+
+        Keeps the UI useful (and the assessment scientifically sound) when
+        the OpenAI/Ollama backend is offline or out of quota.
+        """
+        label = (risk_label or "").lower()
+        pct = round(float(risk_score) * 100, 1)
+
+        if label.startswith("high"):
+            text = (
+                f"The model estimates a {pct}% probability of PCOS, which is "
+                "in the higher-risk band. We recommend booking an appointment "
+                "with a gynaecologist or endocrinologist for a clinical review, "
+                "including a pelvic ultrasound and hormonal panel "
+                "(LH, FSH, total/free testosterone, TSH, prolactin, fasting "
+                "glucose & insulin)."
+            )
+            tests = [
+                "Pelvic / transvaginal ultrasound",
+                "Hormonal panel: LH, FSH, total + free testosterone",
+                "TSH and prolactin to rule out thyroid / pituitary causes",
+                "Fasting glucose, fasting insulin, HbA1c (metabolic screen)",
+                "Lipid profile",
+            ]
+        elif label.startswith("med"):
+            text = (
+                f"The model estimates a {pct}% probability of PCOS, which is "
+                "in the moderate-risk band. Discuss your cycle history and "
+                "any symptoms (irregular periods, hirsutism, acne, weight "
+                "changes) at your next routine visit, and ask whether a "
+                "basic hormonal panel is appropriate."
+            )
+            tests = [
+                "Cycle-day-3 LH and FSH",
+                "Total testosterone",
+                "TSH",
+                "Fasting glucose",
+            ]
+        else:
+            text = (
+                f"The model estimates a {pct}% probability of PCOS, which is "
+                "in the lower-risk band. Continue tracking your cycle and "
+                "any new symptoms; raise concerns with a clinician at your "
+                "next routine check-in."
+            )
+            tests = [
+                "No additional tests indicated unless symptoms develop",
+            ]
+
+        lifestyle = [
+            "Maintain a balanced diet rich in fibre, lean protein and whole grains",
+            "Aim for ≥150 minutes of moderate aerobic activity per week",
+            "Track menstrual cycles to spot irregular patterns early",
+            "Prioritise 7–9 hours of sleep and stress-management practices",
+        ]
+
+        # Pull a couple of the strongest contributors into the rationale.
+        if top_factors:
+            increasing = [f for f in top_factors if f.get("direction") == "increases"][:2]
+            if increasing:
+                names = ", ".join(
+                    str(f.get("feature", "")).strip() for f in increasing
+                )
+                text += f" Key factors raising the score: {names}."
+
+        return {
+            "recommendation": text,
+            "confidence_assessment": (
+                "Generated locally without LLM synthesis "
+                "(LLM service unavailable or quota exhausted)."
+            ),
+            "follow_up_tests": tests,
+            "lifestyle_suggestions": lifestyle,
+        }
+
     def run(
         self,
         validated_data: dict[str, Any],
@@ -458,6 +563,14 @@ class RiskAssessorAgent:
                 )
             except Exception as exc:
                 log.warning("LLM recommendation failed: %s", exc)
+
+        # ── Deterministic fallback when LLM is unavailable / quota'd ────
+        if not llm_recommendation.get("recommendation"):
+            llm_recommendation = self._fallback_recommendation(
+                prediction.risk_score,
+                prediction.risk_label,
+                top_factors,
+            )
 
         elapsed = time.time() - start
         return {

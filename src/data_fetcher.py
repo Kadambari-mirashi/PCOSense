@@ -51,7 +51,7 @@ def fetch_pubmed_papers(
                 "sort": sort,
                 "retmode": "json",
             },
-            timeout=15,
+            timeout=5,
         )
         search_resp.raise_for_status()
         id_list = search_resp.json()["esearchresult"].get("idlist", [])
@@ -67,7 +67,7 @@ def fetch_pubmed_papers(
                 "id": ",".join(id_list),
                 "retmode": "json",
             },
-            timeout=15,
+            timeout=5,
         )
         summary_resp.raise_for_status()
         result = summary_resp.json().get("result", {})
@@ -97,7 +97,7 @@ def fetch_pubmed_papers(
                 "rettype": "abstract",
                 "retmode": "text",
             },
-            timeout=20,
+            timeout=8,
         )
         if abstract_resp.status_code == 200:
             blocks = abstract_resp.text.split("\n\n\n")

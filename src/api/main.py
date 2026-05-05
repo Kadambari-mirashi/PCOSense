@@ -56,6 +56,14 @@ async def lifespan(app: FastAPI):
     db = SupabaseClient()
     _orchestrator = PCOSOrchestrator(db=db if db.is_configured() else None)
     _qc = QualityController()
+
+    # Preload XGBoost predictor + SHAP explainer so the first request is fast.
+    try:
+        from src.ml_model import PCOSPredictor
+        PCOSPredictor.get_instance()
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Predictor preload failed: %s", exc)
+
     log.info("PCOSense pipeline initialized")
     yield
     _orchestrator = None

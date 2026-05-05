@@ -5,9 +5,10 @@ Provides:
   - OllamaClient : generate text, structured JSON, and embeddings.
 
 Provider selection (checked once at init):
-  1. If OPENAI_API_KEY is set  → OpenAI  (gpt-4o-mini, cloud-ready)
-  2. Else if local Ollama runs → Ollama  (local, zero API cost)
-  3. Else                      → is_available() returns False
+  1. If OPENAI_API_KEY    is set → OpenAI       (gpt-4o-mini, cloud-ready)
+  2. Else if OLLAMA_API_KEY is set → Ollama Cloud (https://ollama.com, hosted)
+  3. Else if local Ollama runs   → Ollama local (http://localhost:11434)
+  4. Else                        → is_available() returns False
 """
 
 from __future__ import annotations
@@ -24,7 +25,9 @@ load_dotenv()
 log = logging.getLogger(__name__)
 
 _DEFAULT_HOST = "http://localhost:11434"
+_DEFAULT_CLOUD_HOST = "https://ollama.com"
 _DEFAULT_MODEL = "llama3.2"
+_DEFAULT_CLOUD_MODEL = "gpt-oss:120b"
 _DEFAULT_EMBED_MODEL = "nomic-embed-text"
 _DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 
@@ -59,15 +62,30 @@ class OllamaClient:
                 log.warning("OpenAI SDK init failed, falling back to Ollama: %s", exc)
                 self._openai_client = None
 
-        # Ollama backend (local fallback)
-        self.host = (host or os.getenv("OLLAMA_HOST", _DEFAULT_HOST)).rstrip("/")
-        self.model = model or os.getenv("OLLAMA_MODEL", _DEFAULT_MODEL)
+        # Ollama backend (cloud or local)
+        self._ollama_api_key = os.getenv("OLLAMA_API_KEY", "").strip()
+        # Default to Ollama Cloud when an API key is present and no explicit host
+        # is supplied; otherwise fall back to the local server.
+        env_host = os.getenv("OLLAMA_HOST")
+        default_host = _DEFAULT_CLOUD_HOST if self._ollama_api_key else _DEFAULT_HOST
+        self.host = (host or env_host or default_host).rstrip("/")
+        self._is_cloud = self._ollama_api_key != "" or self.host.startswith("https://ollama.com")
+
+        default_model = _DEFAULT_CLOUD_MODEL if self._is_cloud else _DEFAULT_MODEL
+        self.model = model or os.getenv("OLLAMA_MODEL", default_model)
         self.embed_model = embed_model or os.getenv("OLLAMA_EMBED_MODEL", _DEFAULT_EMBED_MODEL)
         self.timeout = timeout
-        self._http = httpx.Client(timeout=self.timeout)
+
+        # Attach Bearer token automatically for Ollama Cloud calls.
+        headers = {}
+        if self._ollama_api_key:
+            headers["Authorization"] = f"Bearer {self._ollama_api_key}"
+        self._http = httpx.Client(timeout=self.timeout, headers=headers)
+        self._ollama_available_cache: bool | None = None
 
         if not self._openai_client:
-            log.info("LLM backend: Ollama (%s @ %s)", self.model, self.host)
+            backend = "Ollama Cloud" if self._is_cloud else "Ollama"
+            log.info("LLM backend: %s (%s @ %s)", backend, self.model, self.host)
 
     @property
     def _use_openai(self) -> bool:
@@ -86,14 +104,22 @@ class OllamaClient:
             ) from exc
 
     def is_available(self) -> bool:
-        """Return True if any LLM backend is reachable."""
+        """Return True if any LLM backend is reachable.
+
+        The Ollama probe is cached for the lifetime of the client so we don't
+        pay a 5-second timeout three times per assessment when Ollama is not
+        running (common in cloud deployments where OPENAI_API_KEY is unset).
+        """
         if self._use_openai:
             return True
+        if self._ollama_available_cache is not None:
+            return self._ollama_available_cache
         try:
             self._check_ollama()
-            return True
+            self._ollama_available_cache = True
         except ConnectionError:
-            return False
+            self._ollama_available_cache = False
+        return self._ollama_available_cache
 
     def list_models(self) -> list[str]:
         if self._use_openai:

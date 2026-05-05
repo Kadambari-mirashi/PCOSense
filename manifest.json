@@ -18,13 +18,13 @@
       "checksum": "e9633d996741f463633298c7ea641cee"
     },
     ".env.example": {
-      "checksum": "0f6dd1c82b8f472678e9ac55c24a8bd0"
+      "checksum": "1d023d8308416efbfd738f2432024ac3"
     },
     ".gitignore": {
       "checksum": "6e7918d792659a8d44a744176386af2f"
     },
     "README.md": {
-      "checksum": "48f4425012244a73e9f761cabfb09a74"
+      "checksum": "a1ef9ce52e74796e68f9a53e69acd2b8"
     },
     "data/processed/eda_meta.json": {
       "checksum": "558ee433f04780724403ba2314c74ff5"
@@ -38,11 +38,50 @@
     "docs/presentation.html": {
       "checksum": "5955c3db25f32d153f61ddaf331f267c"
     },
+    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/data_level0.bin": {
+      "checksum": "adaf6fc0d3d61ce99a113037a66fca7d"
+    },
+    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/header.bin": {
+      "checksum": "d8258770767e34d1c7457687ed46ce4e"
+    },
+    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/length.bin": {
+      "checksum": "a75d7d422fd00bf31208b013e74d8394"
+    },
+    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/link_lists.bin": {
+      "checksum": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/data_level0.bin": {
+      "checksum": "00728e371e8792e36d758eab1f04a011"
+    },
+    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/header.bin": {
+      "checksum": "d8258770767e34d1c7457687ed46ce4e"
+    },
+    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/length.bin": {
+      "checksum": "a75d7d422fd00bf31208b013e74d8394"
+    },
+    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/link_lists.bin": {
+      "checksum": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "knowledge_base/chroma_db/chroma.sqlite3": {
+      "checksum": "54c855e01efb33828702ce7675f6afc4"
+    },
     "models/model_metadata.json": {
       "checksum": "5c26b2bdcea885fc6ef977263e74e625"
     },
     "models/pcos_model.json": {
       "checksum": "037a3bc9efe8d861798171a68896cd0d"
+    },
+    "notebooks/.ipynb_checkpoints/01_eda-checkpoint.ipynb": {
+      "checksum": "871057b6167e3bee9d4267635f13cc00"
+    },
+    "notebooks/.ipynb_checkpoints/02_features-checkpoint.ipynb": {
+      "checksum": "bf8b23eb7b313c5760ccb230b10b819c"
+    },
+    "notebooks/.ipynb_checkpoints/03_xgboost_training-checkpoint.ipynb": {
+      "checksum": "1cca26092069989709fa4b8e4ee4b662"
+    },
+    "notebooks/.ipynb_checkpoints/04_rag_setup-checkpoint.ipynb": {
+      "checksum": "fa43d62942ab84c529cbc4082b224c48"
     },
     "scripts/regenerate_pkl.py": {
       "checksum": "330a66d04fdef9abe02baeebe49d3d6a"
@@ -51,13 +90,22 @@
       "checksum": "ff70b64a43a70111b5ece3c215b51fe1"
     },
     "src/agents.py": {
-      "checksum": "5c470e9fa851637aff172df7ae1c99a9"
+      "checksum": "f633157355fde0eb7071578cfeffcf16"
     },
     "src/api/__init__.py": {
       "checksum": "78fe66a8fc110224e56120ec969ee38e"
     },
+    "src/api/__pycache__/__init__.cpython-312.pyc": {
+      "checksum": "9ba122edd1c8ab7813739d8651b7e426"
+    },
+    "src/api/__pycache__/main.cpython-312.pyc": {
+      "checksum": "c9fef0f46cbd16598bbc2e06202ec3a6"
+    },
+    "src/api/__pycache__/schemas.cpython-312.pyc": {
+      "checksum": "38c33ea4a24f8699ecbaa6015cf29520"
+    },
     "src/api/main.py": {
-      "checksum": "0aeb860a74c7d69646d4eff5fcb865c1"
+      "checksum": "e1c543db2cd9102b3ed11a75b2672ffe"
     },
     "src/api/schemas.py": {
       "checksum": "fde3a0a6e4e067d667300fbc4ca32bde"
@@ -65,11 +113,17 @@
     "src/app/__init__.py": {
       "checksum": "a3ff68d44c572d0688bab2db475d3a19"
     },
+    "src/app/__pycache__/__init__.cpython-312.pyc": {
+      "checksum": "b84fe0ce514965e07689905d55763079"
+    },
+    "src/app/__pycache__/app.cpython-312.pyc": {
+      "checksum": "19a55c525e3ce2a541821d7105f3fbb2"
+    },
     "src/app/app.py": {
-      "checksum": "4bd1595e806ea541760a2481d3eb3d55"
+      "checksum": "b1ba74ef6e411343656262c810c0a514"
     },
     "src/data_fetcher.py": {
-      "checksum": "30287820ec461698f99478c50b47905d"
+      "checksum": "ec78687bff753b6a342dc81810fc17b7"
     },
     "src/database.py": {
       "checksum": "e85c49d44c3a19a635e1c1da5c23ab23"
@@ -78,13 +132,13 @@
       "checksum": "d8b969e10597742ef63f84ab88c87186"
     },
     "src/ollama_client.py": {
-      "checksum": "c3f4c51853efd0333a970b783a06e168"
+      "checksum": "b7bc624be5b193535afb8f7c65c2ff3f"
     },
     "src/quality_control.py": {
-      "checksum": "9c3b3350c6870e80e5530ddae45f2c55"
+      "checksum": "5cf6cce12d7a58aaa1b705a2c78dd54f"
     },
     "src/rag_system.py": {
-      "checksum": "d8501f92e94157a617dc1c60573bff4e"
+      "checksum": "11163b06b107bb6401d09503761ac3a0"
     },
     "www/pcosense-logo.png": {
       "checksum": "9376545bd0127be0b21b2fad171917c4"

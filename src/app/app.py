@@ -478,6 +478,7 @@ body {
 .pcos-results-bullet { flex-shrink: 0; margin-top: 0.15rem; font-size: 0.75rem; }
 .pcos-results-bullet--error   { color: #dc2626; }
 .pcos-results-bullet--warning { color: #d97706; }
+.pcos-results-bullet--info    { color: #6b7280; }
 
 /* ── Footnote ─────────────────────────────────────────────────── */
 .pcos-results-footnote {
@@ -1073,7 +1074,12 @@ def _format_flags(
     lines: list[Any] = []
     for f in flags[:12]:
         sev = (f.get("severity") or "warning").lower()
-        bullet_class = "pcos-results-bullet--warning" if sev != "error" else "pcos-results-bullet--error"
+        if sev == "error":
+            bullet_class = "pcos-results-bullet--error"
+        elif sev == "info":
+            bullet_class = "pcos-results-bullet--info"
+        else:
+            bullet_class = "pcos-results-bullet--warning"
         lines.append(
             ui.div(
                 ui.span("●", class_=f"pcos-results-bullet {bullet_class}"),
@@ -1462,11 +1468,21 @@ def server(input: Any, output: Any, session: Any) -> None:
             from fastapi.encoders import jsonable_encoder
 
             from src.api.main import get_orchestrator, get_qc
+            from src.api.schemas import (
+                PatientAssessmentRequest,
+                patient_dict_from_request,
+            )
 
             def _run_pipeline() -> dict[str, Any]:
-                result = get_orchestrator().run(payload)
+                # Same mapping the HTTP endpoint applies: clean form keys
+                # (age, bmi, lh, …) → legacy model column names
+                # (" Age (yrs)", "BMI", "LH(mIU/mL)", …) the agents expect.
+                model_payload = patient_dict_from_request(
+                    PatientAssessmentRequest(**payload)
+                )
+                result = get_orchestrator().run(model_payload)
                 qc_metrics = get_qc().create_metrics_report(
-                    patient_data=payload,
+                    patient_data=model_payload,
                     prediction_result=result.get("assessment", {}),
                     rag_results=result.get("evidence", {}),
                 )

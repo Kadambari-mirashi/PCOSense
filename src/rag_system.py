@@ -63,14 +63,14 @@ class RAGSystem:
 
     @property
     def collection(self) -> Any:
-        import chromadb
-
         if self._collection is None:
             if not self.chroma_dir.exists():
                 raise FileNotFoundError(
                     f"Chroma database not found at {self.chroma_dir}.\n"
                     "Run notebooks/04_rag_setup.ipynb first to build the knowledge base."
                 )
+            import chromadb
+
             client = chromadb.PersistentClient(path=str(self.chroma_dir))
             self._collection = client.get_collection(self.collection_name)
             log.info(

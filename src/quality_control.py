@@ -72,6 +72,18 @@ class QCMetrics:
         return result
 
 
+def _get(d: dict, *keys: str):
+    """Return the first present value among `keys` in `d`, else None.
+
+    Used to bridge clean API keys (e.g. ``age``) and the legacy pipeline
+    keys (e.g. `` Age (yrs)``) that come from the raw dataset.
+    """
+    for k in keys:
+        if k in d:
+            return d[k]
+    return None
+
+
 class QualityController:
     """
     Main QC orchestrator. Evaluates and scores each stage of the assessment
@@ -95,41 +107,49 @@ class QualityController:
         """
         flags: list[ValidationFlag] = []
 
-        # Normalise field names: API sends clean keys (age, bmi, lh, fsh),
-        # raw pipeline data uses legacy keys with spaces/parens.
-        def _get(d: dict, *keys: str):
-            for k in keys:
-                if k in d:
-                    return d[k]
-            return None
-
-        # Check required fields — accept either API key or legacy key
+        # Required fields — penalise score only if these are missing.
         required_pairs = [
             ("age", " Age (yrs)"),
             ("bmi", "BMI"),
             ("cycle_ri", "Cycle(R/I)"),
+        ]
+        # Optional labs / ultrasound — informational only, not a penalty.
+        optional_pairs = [
             ("lh", "LH(mIU/mL)"),
             ("fsh", "FSH(mIU/mL)"),
             ("follicle_l", "Follicle No. (L)"),
             ("follicle_r", "Follicle No. (R)"),
         ]
-        missing_labels = []
-        present_count = 0
-        for api_key, legacy_key in required_pairs:
-            if _get(patient_data, api_key, legacy_key) is not None:
-                present_count += 1
-            else:
-                missing_labels.append(api_key)
 
-        if missing_labels:
+        missing_required = [
+            api_key
+            for api_key, legacy_key in required_pairs
+            if _get(patient_data, api_key, legacy_key) is None
+        ]
+        missing_optional = [
+            api_key
+            for api_key, legacy_key in optional_pairs
+            if _get(patient_data, api_key, legacy_key) is None
+        ]
+
+        if missing_required:
             flags.append(ValidationFlag(
                 "required_fields",
                 QCStatus.WARNING,
-                f"Missing fields: {', '.join(missing_labels)}",
+                f"Missing required fields: {', '.join(missing_required)}",
                 "warning",
             ))
+        if missing_optional:
+            flags.append(ValidationFlag(
+                "optional_fields",
+                QCStatus.INFO,
+                f"Optional fields not provided "
+                f"(population baseline used): {', '.join(missing_optional)}",
+                "info",
+            ))
 
-        input_validation_score = present_count / len(required_pairs)
+        present_required = len(required_pairs) - len(missing_required)
+        input_validation_score = present_required / len(required_pairs)
 
         # Check for outliers/implausible values — accept both key formats
         plausibility_checks = [
@@ -342,10 +362,34 @@ class QualityController:
 
         # Stage 3: RAG/Evidence validation
         rag_results = rag_results or {}
+        # Agent 2 emits two paper lists (`retrieved_papers` from Chroma and
+        # `pubmed_papers` from PubMed) plus `clinical_summary` text. Fall back
+        # to the legacy `papers` / `evidence_chunks` / `citation_count` keys
+        # if some other caller passes them.
+        n_chroma = len(rag_results.get("retrieved_papers", []))
+        n_pubmed = len(rag_results.get("pubmed_papers", []))
+        n_papers = (
+            n_chroma + n_pubmed
+            if (n_chroma + n_pubmed) > 0
+            else len(rag_results.get("papers", []))
+        )
+        # Did the LLM produce a synthesis? Treat any non-empty summary
+        # (or explicit evidence_chunks list) as a single high-quality chunk.
+        clinical_summary = (rag_results.get("clinical_summary") or "").strip()
+        n_chunks = (
+            1 if clinical_summary
+            else len(rag_results.get("evidence_chunks", []))
+        )
+        # Citation count: prefer explicit, else derive from PubMed papers.
+        citations = (
+            rag_results.get("citation_count")
+            or n_pubmed
+            or 0
+        )
         rag_score, rag_flags = self.validate_rag_evidence(
-            retrieved_papers=len(rag_results.get("papers", [])),
-            evidence_chunks=len(rag_results.get("evidence_chunks", [])),
-            citations_count=rag_results.get("citation_count", 0),
+            retrieved_papers=n_papers,
+            evidence_chunks=n_chunks,
+            citations_count=citations,
         )
 
         # Compute overall (plausibility uses its own independent score)
@@ -364,7 +408,7 @@ class QualityController:
             "patient_bmi": _get(patient_data, "bmi", "BMI"),
             "risk_score_percentage": f"{prediction_result.get('risk_score', 0) * 100:.1f}%",
             "model_auroc": prediction_result.get("model_auroc", 0.9528),
-            "papers_used": len(rag_results.get("papers", [])),
+            "papers_used": n_papers,
         }
 
         metrics = QCMetrics(
