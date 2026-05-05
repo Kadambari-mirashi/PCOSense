@@ -344,6 +344,31 @@ Use a single web service entrypoint:
 uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
 
+### Posit Connect (Git): root `manifest.json`
+
+Connect needs a `manifest.json` at the **repository root**. Regenerate it after dependency or layout changes. The file must **only list paths that exist in Git** (otherwise the server checkout is missing files and the app exits immediately).
+
+From the repo root, with your venv active:
+
+```bash
+pip install rsconnect-python
+rsconnect write-manifest api . \
+  --entrypoint src.api.main:app \
+  --requirements-file requirements.txt \
+  --overwrite \
+  -x "*__pycache__*" \
+  -x "knowledge_base" \
+  -x "data/raw" \
+  -x "notebooks" \
+  -x ".ipynb_checkpoints" \
+  -x "data/processed/features_processed.pkl" \
+  -x "src/__pycache__"
+```
+
+Commit `manifest.json`, push, then redeploy from Connect.
+
+**Note:** Local Chroma RAG data (`knowledge_base/chroma_db/`) is gitignored. Deployed instances use PubMed + LLM paths; to ship the local vector store, remove it from `.gitignore` and regenerate the manifest without excluding `knowledge_base`.
+
 ### Required environment variables
 
 - `OPENAI_API_KEY` (recommended for hosted deployments)

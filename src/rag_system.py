@@ -17,8 +17,6 @@ _ROOT = str(Path(__file__).resolve().parent.parent)
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-import chromadb
-
 from src.ollama_client import OllamaClient
 
 log = logging.getLogger(__name__)
@@ -59,12 +57,14 @@ class RAGSystem:
         self.chroma_dir = Path(chroma_dir) if chroma_dir else _CHROMA_DIR
         self.collection_name = collection_name
         self.ollama = ollama or OllamaClient()
-        self._collection: chromadb.Collection | None = None
+        self._collection: Any = None
 
     # ── lazy collection handle ──────────────────────────────────────────────
 
     @property
-    def collection(self) -> chromadb.Collection:
+    def collection(self) -> Any:
+        import chromadb
+
         if self._collection is None:
             if not self.chroma_dir.exists():
                 raise FileNotFoundError(

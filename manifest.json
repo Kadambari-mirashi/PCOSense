@@ -18,13 +18,13 @@
       "checksum": "e9633d996741f463633298c7ea641cee"
     },
     ".env.example": {
-      "checksum": "58cb93bfcb9cff8b8f5bc9f07cd7714f"
+      "checksum": "0f6dd1c82b8f472678e9ac55c24a8bd0"
     },
     ".gitignore": {
       "checksum": "6e7918d792659a8d44a744176386af2f"
     },
     "README.md": {
-      "checksum": "eb978625328f3c2bb5c43ac6736ef392"
+      "checksum": "48f4425012244a73e9f761cabfb09a74"
     },
     "data/processed/eda_meta.json": {
       "checksum": "558ee433f04780724403ba2314c74ff5"
@@ -32,44 +32,11 @@
     "data/processed/feature_meta.json": {
       "checksum": "a9000100fc485016acb3e66f89e250fc"
     },
-    "data/processed/features_processed.pkl": {
-      "checksum": "a1fb78393ddd686404b60b7cecaa5057"
-    },
-    "data/raw/PCOS_data_without_infertility.xlsx": {
-      "checksum": "89427c930767c314a0a69387c51672ba"
-    },
-    "data/raw/PCOS_infertility.csv": {
-      "checksum": "0d3d1baff02529c2ffdb9260710f783a"
-    },
     "docs/multi_agent_architecture.md": {
       "checksum": "c8111c493dc50b1dbd7f955de94192e6"
     },
-    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/data_level0.bin": {
-      "checksum": "adaf6fc0d3d61ce99a113037a66fca7d"
-    },
-    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/header.bin": {
-      "checksum": "d8258770767e34d1c7457687ed46ce4e"
-    },
-    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/length.bin": {
-      "checksum": "a75d7d422fd00bf31208b013e74d8394"
-    },
-    "knowledge_base/chroma_db/04e70ce8-5a5a-46f2-9e14-9e1c685b22f1/link_lists.bin": {
-      "checksum": "d41d8cd98f00b204e9800998ecf8427e"
-    },
-    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/data_level0.bin": {
-      "checksum": "adaf6fc0d3d61ce99a113037a66fca7d"
-    },
-    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/header.bin": {
-      "checksum": "d8258770767e34d1c7457687ed46ce4e"
-    },
-    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/length.bin": {
-      "checksum": "a75d7d422fd00bf31208b013e74d8394"
-    },
-    "knowledge_base/chroma_db/ca69a892-a5a3-4c84-a82c-f534f7a45843/link_lists.bin": {
-      "checksum": "d41d8cd98f00b204e9800998ecf8427e"
-    },
-    "knowledge_base/chroma_db/chroma.sqlite3": {
-      "checksum": "a7db4ba852bd35f8f2bcdeb2b5e3d08b"
+    "docs/presentation.html": {
+      "checksum": "d55abb593fa0df91f59567e6ebed99f1"
     },
     "models/model_metadata.json": {
       "checksum": "5c26b2bdcea885fc6ef977263e74e625"
@@ -77,50 +44,11 @@
     "models/pcos_model.json": {
       "checksum": "037a3bc9efe8d861798171a68896cd0d"
     },
-    "notebooks/.ipynb_checkpoints/01_eda-checkpoint.ipynb": {
-      "checksum": "871057b6167e3bee9d4267635f13cc00"
-    },
-    "notebooks/.ipynb_checkpoints/02_features-checkpoint.ipynb": {
-      "checksum": "bf8b23eb7b313c5760ccb230b10b819c"
-    },
-    "notebooks/.ipynb_checkpoints/03_xgboost_training-checkpoint.ipynb": {
-      "checksum": "1cca26092069989709fa4b8e4ee4b662"
-    },
-    "notebooks/.ipynb_checkpoints/04_rag_setup-checkpoint.ipynb": {
-      "checksum": "fa43d62942ab84c529cbc4082b224c48"
-    },
-    "notebooks/01_eda.ipynb": {
-      "checksum": "f301cdf180b98a3448dac42673e136c2"
-    },
-    "notebooks/02_features.ipynb": {
-      "checksum": "e1837c2ace2ab1140c5c5a010135f870"
-    },
-    "notebooks/03_xgboost_training.ipynb": {
-      "checksum": "7207617c0a71d8d59fedb67c43bbf761"
-    },
-    "notebooks/04_rag_setup.ipynb": {
-      "checksum": "fe0ad86f34df72c39b6a917054a3fdeb"
-    },
     "scripts/regenerate_pkl.py": {
       "checksum": "330a66d04fdef9abe02baeebe49d3d6a"
     },
     "src/__init__.py": {
       "checksum": "ff70b64a43a70111b5ece3c215b51fe1"
-    },
-    "src/__pycache__/__init__.cpython-312.pyc": {
-      "checksum": "49843428725b62d5711267cd7a0ce322"
-    },
-    "src/__pycache__/data_fetcher.cpython-312.pyc": {
-      "checksum": "1ca1ea6f59c427b74b23aef831fdb160"
-    },
-    "src/__pycache__/ml_model.cpython-312.pyc": {
-      "checksum": "37ce0bdc21297490c9edcab0ae9f847c"
-    },
-    "src/__pycache__/ollama_client.cpython-312.pyc": {
-      "checksum": "10f20180f30de394f21d232177d71440"
-    },
-    "src/__pycache__/rag_system.cpython-312.pyc": {
-      "checksum": "9db23c4e392a6364cc8d101ad7466e41"
     },
     "src/agents.py": {
       "checksum": "5c470e9fa851637aff172df7ae1c99a9"
@@ -156,7 +84,7 @@
       "checksum": "9c3b3350c6870e80e5530ddae45f2c55"
     },
     "src/rag_system.py": {
-      "checksum": "bd7fb3b7af17a77bd7cbc7a0dcbaf588"
+      "checksum": "d8501f92e94157a617dc1c60573bff4e"
     },
     "www/pcosense-logo.png": {
       "checksum": "9376545bd0127be0b21b2fad171917c4"
