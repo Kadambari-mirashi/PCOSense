@@ -1389,8 +1389,15 @@ def server(input: Any, output: Any, session: Any) -> None:
 
     @reactive.poll(lambda: int(time.time() // 60), interval_secs=60)
     def api_health_ok() -> bool:
-        if os.getenv("RENDER"):
+        # In single-service mode the API and UI live in the same process,
+        # so we just verify the orchestrator can be obtained.
+        try:
+            from src.api.main import get_orchestrator
+            get_orchestrator()
             return True
+        except Exception:
+            pass
+        # Fallback: try HTTP health check (split-mode deployments)
         try:
             with httpx.Client(timeout=4.0) as client:
                 client.get(HEALTH_URL).raise_for_status()
@@ -1448,6 +1455,30 @@ def server(input: Any, output: Any, session: Any) -> None:
 
     @extended_task
     async def run_assess(payload: dict[str, Any]) -> dict[str, Any]:
+        # Prefer in-process call (works in single-service deployments like
+        # Posit Connect, where the API and UI share one uvicorn process).
+        try:
+            import asyncio
+            from fastapi.encoders import jsonable_encoder
+
+            from src.api.main import get_orchestrator, get_qc
+
+            def _run_pipeline() -> dict[str, Any]:
+                result = get_orchestrator().run(payload)
+                qc_metrics = get_qc().create_metrics_report(
+                    patient_data=payload,
+                    prediction_result=result.get("assessment", {}),
+                    rag_results=result.get("evidence", {}),
+                )
+                result["quality_control"] = qc_metrics.to_dict()
+                return jsonable_encoder(result)
+
+            return await asyncio.to_thread(_run_pipeline)
+        except RuntimeError:
+            # Orchestrator not initialised (e.g. running Shiny standalone) —
+            # fall through to HTTP path.
+            pass
+
         timeout = httpx.Timeout(600.0, connect=30.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
             r = await client.post(ASSESS_URL, json=payload)
